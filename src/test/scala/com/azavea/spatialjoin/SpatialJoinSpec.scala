@@ -4,14 +4,14 @@ import geotrellis.vector._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funspec.AnyFunSpec
 
-class SpatialJoinSpec extends TestEnvironment
+class SpatialJoinSpec extends AnyFunSpec
                          with Matchers
-                         with AnyFunSpec {
+                         with TestEnvironment {
+  import SpatialJoinSpec._
+  import spark.implicits._
 
   describe("Spatial Join") {
     it("should identify geometry columns") {
-      case class WithPoint(other: Int, geom: Point)
-      case class WithMultiPoly(geom: MultiPolygon, x: Double, s: String)
 
       val df1 = spark.createDataset[WithPoint](List()).toDF
       val df2 = spark.createDataset[WithMultiPoly](List()).toDF
@@ -21,18 +21,23 @@ class SpatialJoinSpec extends TestEnvironment
     }
 
     it("should fail for multiple geometry columns") {
-      case class TooManyGeoms(pt: Point, poly: Polygon)
 
       val df1 = spark.createDataset[TooManyGeoms](List()).toDF
 
       SpatialJoin.identifyGeomColumn(df1) should be (None)
     }
 
-    it("should fail for multiple geometry columns") {
-      case class NoGeoms(i: Int, d: Double)
+    it("should fail without a geometry column") {
 
       val df1 = spark.createDataset[NoGeoms](List()).toDF
       SpatialJoin.identifyGeomColumn(df1) should be (None)
     }
   }
+}
+
+object SpatialJoinSpec {
+  case class WithPoint(other: Int, geom: Point)
+  case class WithMultiPoly(geom: MultiPolygon, x: Double, s: String)
+  case class TooManyGeoms(pt: Point, poly: Polygon)
+  case class NoGeoms(i: Int, d: Double)
 }

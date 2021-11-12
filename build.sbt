@@ -1,21 +1,21 @@
 cancelable in Global := true
 
-lazy val scala211 = "2.11.12"
+lazy val scala212 = "2.12.8"
 
 lazy val commonDependencies = Seq(
-  Dependencies.jaiCore % Test from s"https://download.osgeo.org/webdav/geotools/javax/media/jai_core/${Versions.JAI}/jai_core-${Versions.JAI}.jar"
-,
+  //Dependencies.jaiCore % Test from s"https://download.osgeo.org/webdav/geotools/javax/media/jai_core/${Versions.JAI}/jai_core-${Versions.JAI}.jar",
   Dependencies.logbackClassic,
   Dependencies.geotrellisVector,
   Dependencies.sparkHive % Provided,
-  Dependencies.sparkJts
-)
+  Dependencies.sparkJts,
+  Dependencies.scalatest % Test
+).map(_ excludeAll(excludedDependencies: _*))
 
 lazy val commonSettings = Seq(
   organization := "com.azavea",
   name := "spark-sql-spatial-join",
   version := "0.0.1-SNAPSHOT",
-  scalaVersion := scala211,
+  scalaVersion := scala212,
   //scalafmtOnCompile := true,
   scalacOptions := Seq(
     "-Ypartial-unification",
@@ -50,10 +50,17 @@ lazy val spatialJoinSettings = commonSettings ++ Seq(
       MergeStrategy.discard
     case "META-INF/MANIFEST.MF" => MergeStrategy.discard
     case _                      => MergeStrategy.first
-  }
+  },
+  assembly / assemblyShadeRules := Seq(
+    ShadeRule.rename("cats.kernel.**" -> s"com.azavea.spatialjoin.cats.kernel.@1").inAll,
+    ShadeRule.rename("shapeless.**" -> s"com.azavea.spatialjoin.shapeless.@1").inAll
+  )
+)
+
+lazy val excludedDependencies = List(
+  ExclusionRule("javax.media", "jai_core")
 )
 
 lazy val spatialJoin = (project in file("."))
   .settings(spatialJoinSettings: _*)
-  .settings({libraryDependencies ++= commonDependencies
-  })
+  .settings({libraryDependencies ++= commonDependencies})
